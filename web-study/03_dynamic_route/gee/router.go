@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+//
+//  router
+//  @Description: 路由实现，核心方法 1、路由注册 2、路由匹配
+//
 type router struct {
 	roots    map[string]*node
 	handlers map[string]HandlerFunc
@@ -12,14 +16,16 @@ type router struct {
 
 func newRouter() *router {
 	return &router{
-		roots:    make(map[string]*node),
-		handlers: make(map[string]HandlerFunc),
+		roots:    make(map[string]*node),       // 前缀树用于路由匹配
+		handlers: make(map[string]HandlerFunc), // 路由地址和handler的映射map
 	}
 }
 
 //
 //  addRoute
 //  @Description:  路由注册
+// 					1、在前缀树中添加相应的路由节点
+// 					2、注册对应的路由地址的handler
 //  @receiver r
 //  @param method  请求类型
 //  @param pattern 路由
@@ -27,13 +33,13 @@ func newRouter() *router {
 //
 func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 	parts := parsePattern(pattern)
-
 	key := method + "-" + pattern
-	_, ok := r.roots[method]
-	if !ok {
+	if _, ok := r.roots[method]; !ok {
 		r.roots[method] = &node{}
 	}
+	// 在前缀树中添加相应的路由节点
 	r.roots[method].insert(pattern, parts, 0)
+	// 注册对应的路由地址的handler
 	r.handlers[key] = handler
 }
 
@@ -49,35 +55,28 @@ func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 func (r *router) getRoute(method string, path string) (*node, map[string]string) {
 	searchParts := parsePattern(path)
 	params := make(map[string]string)
-	root, ok := r.roots[method]
-
-	if !ok {
-		return nil, nil
-	}
-
-	n := root.search(searchParts, 0)
-
-	if n != nil {
-		parts := parsePattern(n.pattern)
-		for index, part := range parts {
-			if part[0] == ':' {
-				params[part[1:]] = searchParts[index]
+	if root, ok := r.roots[method]; ok {
+		if n := root.search(searchParts, 0); n != nil {
+			parts := parsePattern(n.pattern)
+			for index, part := range parts {
+				if part[0] == ':' {
+					params[part[1:]] = searchParts[index]
+				}
+				if part[0] == '*' && len(part) > 1 {
+					params[part[1:]] = strings.Join(searchParts[index:], "/")
+					break
+				}
 			}
-			if part[0] == '*' && len(part) > 1 {
-				params[part[1:]] = strings.Join(searchParts[index:], "/")
-				break
-			}
+			return n, params
 		}
-		return n, params
 	}
-
 	return nil, nil
 }
 
 //
 //  parsePattern
-//  @Description:
-//  @param pattern
+//  @Description:	解析路由地址 生成路由数组
+//  @param pattern	路由地址
 //  @return []string
 //
 func parsePattern(pattern string) []string {
