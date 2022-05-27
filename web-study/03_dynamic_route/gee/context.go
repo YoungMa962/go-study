@@ -102,44 +102,40 @@ func (c *Context) Param(key string) string {
 	return value
 }
 
-func (c Context) Req() *http.Request {
+func (c *Context) Req() *http.Request {
 	return c.req
-}
-
-func (c Context) Writer() http.ResponseWriter {
-	return c.writer
-}
-
-func (c Context) Path() string {
-	return c.path
-}
-
-func (c Context) Method() string {
-	return c.method
-}
-
-func (c Context) Params() map[string]string {
-	return c.params
-}
-
-func (c Context) StatusCode() int {
-	return c.statusCode
 }
 
 func (c *Context) SetReq(req *http.Request) {
 	c.req = req
 }
 
+func (c *Context) Writer() http.ResponseWriter {
+	return c.writer
+}
+
 func (c *Context) SetWriter(writer http.ResponseWriter) {
 	c.writer = writer
+}
+
+func (c *Context) Path() string {
+	return c.path
 }
 
 func (c *Context) SetPath(path string) {
 	c.path = path
 }
 
+func (c *Context) Method() string {
+	return c.method
+}
+
 func (c *Context) SetMethod(method string) {
 	c.method = method
+}
+
+func (c *Context) Params() map[string]string {
+	return c.params
 }
 
 func (c *Context) SetParams(params map[string]string) {
