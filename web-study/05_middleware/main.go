@@ -17,6 +17,7 @@ func onlyForV2() gee.HandlerFunc {
 func main() {
 	r := gee.NewEngine()
 	r.Use(gee.Logger())
+	r.Use(gee.Recovery())
 	//r.GET("/index", func(c *gee.Context) {
 	//	c.HTMLResponse(http.StatusOK, "<h1>Index Page</h1>")
 	//})
@@ -37,6 +38,12 @@ func main() {
 			})
 		})
 	}
+
+	// panic test
+	r.GET("/panic", func(c *gee.Context) {
+		names := []string{"geektutu"}
+		c.StringResponse(http.StatusOK, names[100])
+	})
 	r.Run(":9999")
 
 }
