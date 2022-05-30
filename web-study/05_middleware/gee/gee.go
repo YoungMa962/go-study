@@ -1,7 +1,10 @@
 package gee
 
 import (
+	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // HandlerFunc request handler
@@ -19,6 +22,10 @@ func NewEngine() *Engine {
 	engine.root = NewRouterGroup("", nil, nil, *engine)
 	engine.groups = []*RouterGroup{engine.root}
 	return engine
+}
+
+func (engine *Engine) Use(middlewares ...HandlerFunc) {
+	engine.root.Use(middlewares...)
 }
 
 func (engine *Engine) Group(prefix string) *RouterGroup {
@@ -61,6 +68,25 @@ func (engine *Engine) Run(addr string) (err error) {
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// 添加 中间件函数到执行列表
+	var middlewares []HandlerFunc
+	for _, group := range engine.groups {
+		if strings.HasPrefix(req.URL.Path, group.prefix) && group.middlewares != nil {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
 	c := newContext(w, req)
+	c.handlers = middlewares
 	engine.router.handle(c)
+}
+
+func Logger() HandlerFunc {
+	return func(context *Context) {
+		// Start timer
+		t := time.Now()
+		// Process request
+		context.Next()
+		// Calculate resolution time
+		log.Printf("[%d] %s in %v", context.StatusCode(), context.Req().RequestURI, time.Since(t))
+	}
 }
